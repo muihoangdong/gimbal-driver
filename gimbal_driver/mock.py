@@ -2,7 +2,7 @@
 import time
 from typing import Optional
 
-from .base import Capabilities, ErrorCode, GimbalDriver, GimbalError, GimbalState
+from .base import Capabilities, ConnectionState, ErrorCode, GimbalDriver, GimbalError, GimbalState
 
 
 class MockGimbalDriver(GimbalDriver):
@@ -26,6 +26,12 @@ class MockGimbalDriver(GimbalDriver):
         return GimbalState(moving=self.physically_moving, pan_deg=self.pan_deg,
                            tilt_deg=self.tilt_deg, roll_deg=0.0, battery_percent=100,
                            motor="AWAKE", telemetry_stale=not self.link_up)
+
+    def check_link(self) -> ConnectionState:
+        with self._lock:
+            if self._state is ConnectionState.CONNECTED and not self.link_up:
+                self._fail(GimbalError(ErrorCode.NOT_CONNECTED, "mock: mat link"))
+            return self._state
 
     def drop_link(self) -> None:
         """Gia lap mat Bluetooth; gimbal giu nguyen chuyen dong dang co."""

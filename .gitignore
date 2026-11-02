@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 bench_g01.csv
+*.log
+soak.csv
+config.json

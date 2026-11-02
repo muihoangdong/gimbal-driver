@@ -63,11 +63,19 @@ def main():
         run_step(writer, "G-T02b", "Pan phai", pulse(1, 0), "Quay phai roi tu dung")
         run_step(writer, "G-T03a", "Tilt len", pulse(0, 1), "Ngang len roi tu dung")
         run_step(writer, "G-T03b", "Tilt xuong", pulse(0, -1), "Cui xuong roi tu dung")
-        run_step(writer, "G-T04a", "Recenter", driver.recenter, "Ve giua")
+
+        def move_then_stop():
+            driver.move(1, 0, 3000)
+            time.sleep(0.5)
+            driver.stop()
+
+        run_step(writer, "G-T04a", "Stop giua chung", move_then_stop,
+                 "Dung sau khoang 0,5 giay, khong doi het 3 giay")
+        run_step(writer, "G-T04b", "Recenter", driver.recenter, "Ve giua")
         run_step(writer, "STATE", "Doc telemetry", show_state,
                  "So voi thuc te; goc chi la tuong doi")
 
-    print(f"\nDa ghi ket qua vao {args.out}. Bai G-T05 (ngat BLE khi dang quay) lam rieng.")
+    print(f"\nDa ghi ket qua vao {args.out}. Bai G-T05/G-T06 dung tools/link_loss_test.py.")
 
 
 if __name__ == "__main__":

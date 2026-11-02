@@ -1,0 +1,12 @@
+{
+  "driver": "bridge",
+  "bridge_url": "http://127.0.0.1:8787",
+  "bridge_token": null,
+  "host": "0.0.0.0",
+  "port": 8080,
+  "token": "doi-gia-tri-nay",
+  "log_file": "gimbal_driver.log",
+  "connect_timeout_s": 60,
+  "monitor_interval_s": 1.0,
+  "reconnect_attempts": 5
+}

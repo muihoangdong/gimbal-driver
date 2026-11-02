@@ -1,0 +1,13 @@
+[Unit]
+Description=Gimbal Driver service
+After=network.target rs3mini-bridge.service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/gimbal-driver
+ExecStart=/usr/bin/python3 -m gimbal_driver --config /home/pi/gimbal-driver/config.json
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

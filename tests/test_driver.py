@@ -76,6 +76,19 @@ class MockDriverTest(unittest.TestCase):
         self.d.stop()
         self.assertFalse(self.d.physically_moving)
 
+    def test_duplicate_move_is_throttled(self):
+        for _ in range(5):
+            self.d.move(1, 0, 1000)
+        self.assertEqual(self.d.commands.count(("move", 1, 0)), 1)
+
+    def test_reconnect_sends_stop_for_interrupted_move(self):
+        self.d.move(1, 0, 2000)
+        self.d.drop_link()
+        self.d.check_link()
+        self.d.restore_link()
+        self.d.connect()
+        self.assertFalse(self.d.physically_moving)
+
     def test_move_requires_connection(self):
         self.d.disconnect()
         self.assert_code(ErrorCode.NOT_CONNECTED, self.d.move, 1, 0, 100)
@@ -163,9 +176,10 @@ class BridgeDriverTest(unittest.TestCase):
 
     def test_poll_detects_lost_ble_then_recovery(self):
         FakeBridge.label = "NO GIMB"
-        self.assertIs(self.d.poll_link(), ConnectionState.FAULT)
+        self.assertIs(self.d.check_link(), ConnectionState.FAULT)
         FakeBridge.label = "OK"
-        self.assertIs(self.d.poll_link(), ConnectionState.CONNECTED)
+        self.d.connect(timeout_s=1)
+        self.assertIs(self.d.check_link(), ConnectionState.CONNECTED)
 
     def test_connect_timeout(self):
         FakeBridge.label = "CONN…"

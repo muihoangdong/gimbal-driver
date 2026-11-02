@@ -38,15 +38,16 @@ class BridgeHttpDriver(GimbalDriver):
             telemetry_stale=stale,
         )
 
-    def poll_link(self) -> ConnectionState:
-        """Goi dinh ky de phat hien mat BLE; bridge tu reconnect nen CONNECTED co the quay lai."""
+    def check_link(self) -> ConnectionState:
         with self._lock:
-            label = self._request("GET", "/health/label")
-            if self._state is ConnectionState.DISCONNECTED:
+            if self._state is not ConnectionState.CONNECTED:
                 return self._state
-            if label == "OK":
-                self._state = ConnectionState.CONNECTED
-            elif self._state is ConnectionState.CONNECTED:
+            try:
+                label = self._request("GET", "/health/label")
+            except GimbalError as e:
+                self._fail(e)
+                return self._state
+            if label != "OK":
                 self._fail(GimbalError(ErrorCode.NOT_CONNECTED, f"bridge: {label}"))
             return self._state
 

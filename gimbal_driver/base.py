@@ -1,6 +1,7 @@
 """Hop dong chung cua Gimbal Driver: khong chua logic tracking hay giao thuc BLE."""
 import logging
 import threading
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -10,6 +11,8 @@ log = logging.getLogger("gimbal_driver")
 
 # Moi lenh chuyen dong phai co thoi han; driver tu dung khi het han.
 MAX_MOVE_DURATION_MS = 5000
+# Lenh cung huong goi lien tuc chi gia han noi bo, khong gui xuong gimbal moi lan.
+MOVE_RESEND_MS = 500
 
 
 class ConnectionState(Enum):
@@ -69,6 +72,8 @@ class GimbalDriver(ABC):
         self._state = ConnectionState.DISCONNECTED
         self._last_error: Optional[GimbalError] = None
         self._moving = False
+        self._last_move = None
+        self._last_send = 0.0
         self._move_generation = 0
         self._deadline_timer: Optional[threading.Timer] = None
 
@@ -104,6 +109,14 @@ class GimbalDriver(ABC):
                 self._fail(e)
                 raise
             self._state = ConnectionState.CONNECTED
+            if self._moving:
+                # Noi lai sau khi mat link giua luc quay: dung truoc khi nhan lenh moi.
+                try:
+                    self._send_stop()
+                except GimbalError as e:
+                    self._fail(GimbalError(ErrorCode.STOP_UNCONFIRMED, str(e)))
+                    raise self._last_error from e
+                self._moving = False
             self._last_error = None
             log.info("connected")
 
@@ -117,6 +130,10 @@ class GimbalDriver(ABC):
             self._close()
             self._state = ConnectionState.DISCONNECTED
             log.info("disconnected")
+
+    def check_link(self) -> ConnectionState:
+        """Kiem tra lien ket that; duoc LinkMonitor goi dinh ky."""
+        return self.get_connection_state()
 
     def get_connection_state(self) -> ConnectionState:
         with self._lock:
@@ -139,11 +156,17 @@ class GimbalDriver(ABC):
             raise GimbalError(ErrorCode.UNSUPPORTED, "khong ho tro quay 2 truc cung luc")
         with self._lock:
             self._require_connected()
-            try:
-                self._send_move(pan_dir, tilt_dir)
-            except GimbalError as e:
-                self._fail(e)
-                raise
+            now = time.monotonic()
+            duplicate = (self._moving and self._last_move == (pan_dir, tilt_dir)
+                         and (now - self._last_send) * 1000 < MOVE_RESEND_MS)
+            if not duplicate:
+                try:
+                    self._send_move(pan_dir, tilt_dir)
+                except GimbalError as e:
+                    self._fail(e)
+                    raise
+                self._last_move = (pan_dir, tilt_dir)
+                self._last_send = now
             self._moving = True
             self._arm_deadline(duration_ms)
 
