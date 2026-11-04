@@ -4,6 +4,19 @@ Driver độc lập để Cinematic Controller điều khiển DJI RS 3 Mini mà
 
 **Trạng thái:** mới kiểm thử với Mock và bridge giả lập, chưa chạy trên gimbal thật.
 
+## Tài liệu
+
+| Sản phẩm bàn giao | File | Trạng thái |
+|---|---|---|
+| Mã nguồn Gimbal Driver | `gimbal_driver/` | Xong, chưa thử trên phần cứng |
+| File cấu hình và hướng dẫn cài đặt | `config.example.json`, [docs/INSTALL.md](docs/INSTALL.md) | Xong, chưa thử trên Pi |
+| API Documentation | [docs/API.md](docs/API.md) | Xong |
+| Demo điều khiển từ Raspberry Pi | `examples/basic_move.py`, `tools/bench_g01.py` | Chờ chạy trên Pi và quay video |
+| Bộ test độc lập | `tests/`, `tools/` | Test tự động xong; bài test phần cứng chờ chạy |
+| Báo cáo Lock/Follow | [docs/REPORT_LOCK_FOLLOW.md](docs/REPORT_LOCK_FOLLOW.md) | Khung, chờ số liệu |
+| Báo cáo độ trễ và độ ổn định BLE | [docs/REPORT_LATENCY_BLE.md](docs/REPORT_LATENCY_BLE.md) | Khung, chờ số liệu |
+| Danh sách giới hạn kỹ thuật | [docs/LIMITATIONS.md](docs/LIMITATIONS.md) | Bản đầu, cập nhật sau khi đo |
+
 ## Implementation
 
 | Class | Dùng khi |
