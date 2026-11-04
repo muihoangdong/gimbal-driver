@@ -1,6 +1,6 @@
 # Hướng dẫn cài đặt
 
-Cài trên Raspberry Pi 4 để điều khiển DJI RS 3 Mini. Muốn thử API khi chưa có gimbal thì chỉ cần Python 3.10+ (mục 7).
+Cài trên Raspberry Pi 4 để điều khiển DJI RS 3 Mini. Muốn thử API khi chưa có gimbal thì chỉ cần CMake và trình biên dịch C++17 (mục 7).
 
 > **Trạng thái:** các bước dưới chưa được chạy trọn vẹn trên Pi 4 và RS 3 Mini của nhóm. Ghi lại mọi chỗ khác thực tế vào mục *Nhật ký cài đặt* cuối file.
 
@@ -10,17 +10,18 @@ Cài trên Raspberry Pi 4 để điều khiển DJI RS 3 Mini. Muốn thử API 
 |---|---|
 | Phần cứng | Raspberry Pi 4, DJI RS 3 Mini đã cân bằng |
 | Hệ điều hành | Raspberry Pi OS (64-bit khuyến nghị) |
-| Phần mềm | Python 3.10+, Node.js 20+, BlueZ, git |
+| Phần mềm | CMake 3.20+, g++ hỗ trợ C++17, Node.js 20+, BlueZ, git |
 | Mạng | Pi và máy điều khiển cùng mạng LAN |
 
 ## 2. Cài gói hệ thống
 
 ```bash
 sudo apt update
-sudo apt install -y git python3 bluetooth bluez libbluetooth-dev libudev-dev build-essential
+sudo apt install -y git cmake g++ bluetooth bluez libbluetooth-dev libudev-dev build-essential
 sudo systemctl enable --now bluetooth
 sudo rfkill unblock bluetooth
-python3 --version
+cmake --version
+g++ --version
 node -v
 ```
 
@@ -71,12 +72,14 @@ curl http://127.0.0.1:8787/health/label   # "OK" là đã nối
 ## 6. Cài Gimbal Driver
 
 ```bash
-git clone https://github.com/muihoangdong/gimbal-driver.git ~/gimbal-driver
+git clone --depth 1 https://github.com/muihoangdong/gimbal-driver.git ~/gimbal-driver
 cd ~/gimbal-driver
-python3 -m unittest discover -s tests
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGIMBAL_BUILD_TESTS=ON
+cmake --build build -j2      # lần đầu cần Internet để tải thư viện, mất vài phút trên Pi 4
+./build/gimbal_tests
 cp config.example.json config.json
 nano config.json   # đổi token, chọn driver "bridge"
-python3 -m gimbal_driver --config config.json
+./build/gimbal-driver --config config.json
 ```
 
 Kiểm tra từ máy khác trong LAN:
@@ -87,11 +90,12 @@ curl -H "X-Gimbal-Token: <token>" http://<IP_PI>:8080/gimbal/status
 
 ## 7. Chạy thử không cần gimbal
 
-Trên Windows, Linux hoặc macOS có Python 3.10+:
+Trên Linux hoặc macOS có CMake và trình biên dịch C++17. Trên Windows, dùng Visual Studio Build Tools và chạy trong *Developer Command Prompt*.
 
 ```bash
-python -m gimbal_driver            # Mock tại 127.0.0.1:8080
-python examples/basic_move.py
+cmake -S . -B build && cmake --build build
+./build/gimbal-driver              # Mock tại 127.0.0.1:8080
+./build/basic_move
 ```
 
 ## 8. Tự khởi động bằng systemd

@@ -11,14 +11,14 @@ Cung cấp số liệu để quyết định RS 3 Mini có dùng được cho Au
 | Mục | Giá trị |
 |---|---|
 | Ngày thử | |
-| Raspberry Pi OS / Python / Node.js | |
+| Raspberry Pi OS / g++ / Node.js | |
 | Firmware gimbal / commit bridge | |
 | Khoảng cách Pi – gimbal | |
 | Cấu hình bridge (`MOVE_STICK_SCALE`, `MOVE_HOLD_MS`) | |
 
 ## 3. Phân biệt hai loại thời gian
 
-- **Thời gian API (`api_ms`)**: từ lúc gửi lệnh tới lúc bridge trả lời. Đo bằng `tools/soak_test.py`.
+- **Thời gian API (`api_ms`)**: từ lúc gửi lệnh tới lúc bridge trả lời. Đo bằng `build/soak_test`.
 - **Thời gian motor phản ứng**: từ lúc gửi lệnh tới lúc ảnh bắt đầu dịch chuyển. Đo bằng video tốc độ cao hoặc phân tích khung hình webcam trên gimbal, đồng bộ với log lệnh.
 
 Không dùng thời gian API thay cho thời gian motor.
@@ -27,13 +27,13 @@ Không dùng thời gian API thay cho thời gian motor.
 
 | Phép đo | Số lần | Trung vị | p95 | Max | Công cụ |
 |---|---|---|---|---|---|
-| Thời gian kết nối (s) | | | | | `bench_g01.py` |
-| `api_ms` lệnh move | | | | | `soak_test.py` |
+| Thời gian kết nối (s) | | | | | `bench_g01` |
+| `api_ms` lệnh move | | | | | `soak_test` |
 | Trễ lệnh → motor chuyển động (ms) | | | | | Video |
 | Trễ Stop → motor dừng (ms) | | | | | Video |
 | Đáp ứng đảo chiều (ms) | | | | | Video |
-| Thời gian phát hiện mất BLE (s) | | | | | `link_loss_test.py` |
-| Thời gian nối lại (s) | | | | | `link_loss_test.py` |
+| Thời gian phát hiện mất BLE (s) | | | | | `link_loss_test` |
+| Thời gian nối lại (s) | | | | | `link_loss_test` |
 
 **Dao động khi gửi lệnh liên tục:**
 
