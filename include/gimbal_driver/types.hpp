@@ -58,6 +58,10 @@ struct GimbalState {
     std::optional<int> battery_percent;
     std::string motor = "UNKNOWN";
     bool telemetry_stale = true;
+    // Cuong do tin hieu lien ket toi gimbal (BLE), dung de theo doi do on dinh.
+    std::optional<int> link_rssi_dbm;
+    // true: goc da tru moc 0 do setReference() dat (moc phan mem, khong phai hieu chinh dong co).
+    bool reference_set = false;
 };
 
 }  // namespace gimbal

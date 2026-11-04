@@ -24,10 +24,10 @@ public:
 
     // verified_on_hardware chi doi sau khi G01 chay tren RS 3 Mini cua nhom.
     Capabilities getCapabilities() const override;
-    GimbalState getGimbalState() override;
     ConnectionState checkLink() override;
 
 protected:
+    GimbalState readGimbalState() override;
     void doOpen(double timeout_s) override;
     void doClose() override;  // BLE thuoc ve tien trinh bridge
     void doMove(int pan_dir, int tilt_dir) override;

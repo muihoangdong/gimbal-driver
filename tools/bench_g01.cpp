@@ -29,7 +29,10 @@ void runStep(std::ofstream& out, const std::string& test_id, const std::string& 
     }
     const auto api_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                             std::chrono::steady_clock::now() - started).count();
-    const bool passed = tools::prompt("  Dat yeu cau? (y/n): ") == "y";
+    // Khong nhan cau tra loi trong: Enter nham khong duoc tinh la Fail.
+    std::string answer;
+    while (answer != "y" && answer != "n") answer = tools::prompt("  Dat yeu cau? (y/n): ");
+    const bool passed = answer == "y";
     const std::string note = tools::prompt("  Ghi chu: ");
     out << tools::csvRow(tools::now(), test_id, name, std::string(passed ? "Pass" : "Fail"),
                          std::to_string(api_ms), error, note);

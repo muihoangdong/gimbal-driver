@@ -58,9 +58,26 @@ json request(const BridgeHttpOptions& options, const std::string& method, const 
     }
 }
 
+// Bridge co the tra null hoac thieu truong khi gimbal vua rot; moi truong deu doc an toan.
+const json& child(const json& object, const char* key) {
+    static const json kEmpty = json::object();
+    if (!object.is_object() || !object.contains(key) || !object[key].is_object()) return kEmpty;
+    return object[key];
+}
+
 std::optional<double> optionalNumber(const json& object, const char* key) {
     if (!object.is_object() || !object.contains(key) || !object[key].is_number()) return std::nullopt;
     return object[key].get<double>();
+}
+
+bool boolOr(const json& object, const char* key, bool fallback) {
+    if (!object.contains(key) || !object[key].is_boolean()) return fallback;
+    return object[key].get<bool>();
+}
+
+std::string stringOr(const json& object, const char* key, const std::string& fallback) {
+    if (!object.contains(key) || !object[key].is_string()) return fallback;
+    return object[key].get<std::string>();
 }
 
 }  // namespace
@@ -80,15 +97,12 @@ Capabilities BridgeHttpDriver::getCapabilities() const {
     return caps;
 }
 
-GimbalState BridgeHttpDriver::getGimbalState() {
+GimbalState BridgeHttpDriver::readGimbalState() {
     const json data = request(options_, "GET", "/state");
-    const json telemetry = data.is_object() && data.contains("telemetry") && data["telemetry"].is_object()
-        ? data["telemetry"] : json::object();
+    const json& telemetry = child(data, "telemetry");
     GimbalState state;
-    state.telemetry_stale = telemetry.value("stale", true);
-    if (data.is_object() && data.contains("move") && data["move"].is_object()) {
-        state.moving = data["move"].value("active", false);
-    }
+    state.telemetry_stale = boolOr(telemetry, "stale", true);
+    state.moving = boolOr(child(data, "move"), "active", false);
     if (!state.telemetry_stale) {
         state.pan_deg = optionalNumber(telemetry, "panDeg");
         state.tilt_deg = optionalNumber(telemetry, "tiltDeg");
@@ -97,8 +111,9 @@ GimbalState BridgeHttpDriver::getGimbalState() {
     if (auto battery = optionalNumber(telemetry, "batteryPercent")) {
         state.battery_percent = static_cast<int>(*battery);
     }
-    if (data.is_object() && data.contains("motor") && data["motor"].is_object()) {
-        state.motor = data["motor"].value("state", std::string("UNKNOWN"));
+    state.motor = stringOr(child(data, "motor"), "state", "UNKNOWN");
+    if (auto rssi = optionalNumber(child(data, "ble"), "rssiDbm")) {
+        state.link_rssi_dbm = static_cast<int>(*rssi);
     }
     return state;
 }

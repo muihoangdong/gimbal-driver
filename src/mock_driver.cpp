@@ -14,7 +14,7 @@ Capabilities MockGimbalDriver::getCapabilities() const {
     return caps;
 }
 
-GimbalState MockGimbalDriver::getGimbalState() {
+GimbalState MockGimbalDriver::readGimbalState() {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     integrate();
     GimbalState state;
@@ -70,7 +70,11 @@ void MockGimbalDriver::requireLink() const {
     if (!link_up_) throw GimbalError(ErrorCode::NotConnected, "mock: mat link");
 }
 
-void MockGimbalDriver::doOpen(double) { requireLink(); }
+void MockGimbalDriver::doOpen(double) {
+    // connect() goi ham nay khi khong giu khoa.
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    requireLink();
+}
 
 void MockGimbalDriver::doClose() {}
 

@@ -20,7 +20,8 @@ public:
     GimbalDriver& operator=(const GimbalDriver&) = delete;
 
     virtual Capabilities getCapabilities() const = 0;
-    virtual GimbalState getGimbalState() = 0;
+    // Trang thai gimbal; neu da dat moc 0 thi goc tra ve la goc so voi moc.
+    GimbalState getGimbalState();
 
     void connect(double timeout_s = 60.0);
     void disconnect();
@@ -34,9 +35,15 @@ public:
     void stop();
     void recenter();
 
+    // Lay huong hien tai lam moc 0 bang phan mem. Khong hieu chinh dong co gimbal
+    // (Auto Tune / System Calibration van phai lam trong app Ronin).
+    void setReference();
+    void clearReference();
+
 protected:
     GimbalDriver();
 
+    virtual GimbalState readGimbalState() = 0;
     virtual void doOpen(double timeout_s) = 0;
     virtual void doClose() = 0;
     virtual void doMove(int pan_dir, int tilt_dir) = 0;
@@ -59,6 +66,7 @@ private:
     void timerLoop();
 
     std::optional<GimbalError> last_error_;
+    std::optional<GimbalState> reference_;
     bool moving_ = false;
     std::optional<std::pair<int, int>> last_move_;
     Clock::time_point last_send_{};

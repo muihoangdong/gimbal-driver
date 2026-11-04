@@ -16,7 +16,6 @@ public:
     ~MockGimbalDriver() override;
 
     Capabilities getCapabilities() const override;
-    GimbalState getGimbalState() override;
     ConnectionState checkLink() override;
 
     // Gia lap mat Bluetooth; gimbal giu nguyen chuyen dong dang co.
@@ -26,6 +25,7 @@ public:
     std::vector<std::string> commands() const;
 
 protected:
+    GimbalState readGimbalState() override;
     void doOpen(double timeout_s) override;
     void doClose() override;
     void doMove(int pan_dir, int tilt_dir) override;

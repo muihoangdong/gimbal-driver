@@ -2,6 +2,8 @@
 
 #include "gimbal_driver/log.hpp"
 
+#include <cmath>
+
 namespace gimbal {
 
 const char* toString(ConnectionState state) {
@@ -56,13 +58,22 @@ void GimbalDriver::shutdownTimer() {
 }
 
 void GimbalDriver::connect(double timeout_s) {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    state_ = ConnectionState::Connecting;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        state_ = ConnectionState::Connecting;
+    }
+    // Khong giu khoa trong luc cho ket noi (co the toi timeout_s) de trang thai van tra loi ngay.
     try {
         doOpen(timeout_s);
     } catch (const GimbalError& e) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         fail(e);
         throw;
+    }
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (state_ != ConnectionState::Connecting) {
+        // disconnect() da duoc goi trong luc dang cho.
+        throw GimbalError(ErrorCode::NotConnected, "ket noi bi huy");
     }
     state_ = ConnectionState::Connected;
     if (moving_) {
@@ -168,6 +179,48 @@ void GimbalDriver::recenter() {
         fail(e);
         throw;
     }
+}
+
+namespace {
+// Hieu goc trong khoang [-180, 180) de qua moc +-180 khong nhay 360 do.
+double angleDiff(double value, double reference) {
+    double d = std::fmod(value - reference + 180.0, 360.0);
+    if (d < 0) d += 360.0;
+    return d - 180.0;
+}
+
+void subtract(std::optional<double>& value, const std::optional<double>& reference) {
+    if (value && reference) value = angleDiff(*value, *reference);
+}
+}  // namespace
+
+GimbalState GimbalDriver::getGimbalState() {
+    GimbalState state = readGimbalState();
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    if (reference_) {
+        subtract(state.pan_deg, reference_->pan_deg);
+        subtract(state.tilt_deg, reference_->tilt_deg);
+        subtract(state.roll_deg, reference_->roll_deg);
+        state.reference_set = true;
+    }
+    return state;
+}
+
+void GimbalDriver::setReference() {
+    const GimbalState raw = readGimbalState();
+    if (raw.telemetry_stale || !raw.pan_deg || !raw.tilt_deg) {
+        throw GimbalError(ErrorCode::NotReady, "chua co telemetry goc de dat moc");
+    }
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    reference_ = raw;
+    log::info("gimbal_driver", "dat moc 0 tai pan=" + std::to_string(*raw.pan_deg) +
+                                   " tilt=" + std::to_string(*raw.tilt_deg));
+}
+
+void GimbalDriver::clearReference() {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    reference_.reset();
+    log::info("gimbal_driver", "xoa moc 0");
 }
 
 void GimbalDriver::requireConnected() const {

@@ -96,7 +96,9 @@ json statusJson(GimbalDriver& driver) {
                             {"roll_deg", optionalJson(s.roll_deg)},
                             {"battery_percent", optionalJson(s.battery_percent)},
                             {"motor", s.motor},
-                            {"telemetry_stale", s.telemetry_stale}};
+                            {"telemetry_stale", s.telemetry_stale},
+                            {"link_rssi_dbm", optionalJson(s.link_rssi_dbm)},
+                            {"reference_set", s.reference_set}};
     } catch (const GimbalError& e) {
         status["gimbal"] = nullptr;
         status["gimbal_error"] = toString(e.code());
@@ -142,6 +144,14 @@ struct GimbalService::Impl {
         if (path == "/gimbal/recenter") {
             driver.recenter();
             return json{{"gimbal", "recenter"}};
+        }
+        if (path == "/gimbal/calibrate") {
+            driver.setReference();
+            return json{{"gimbal", "calibrate"}, {"reference_set", true}};
+        }
+        if (path == "/gimbal/calibrate/clear") {
+            driver.clearReference();
+            return json{{"gimbal", "calibrate"}, {"reference_set", false}};
         }
         if (path == "/gimbal/mode") {
             throw GimbalError(ErrorCode::Unsupported, "chua co lenh doi che do da kiem chung");

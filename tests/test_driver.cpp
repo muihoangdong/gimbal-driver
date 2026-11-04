@@ -156,6 +156,7 @@ public:
     int move_status = 200;
     std::string label = "OK";
     json state = {{"move", {{"active", false}}},
+                  {"ble", {{"connected", true}, {"rssiDbm", -55}}},
                   {"motor", {{"state", "AWAKE"}}},
                   {"telemetry", {{"panDeg", 1.5}, {"tiltDeg", 2.5}, {"rollDeg", 0},
                                  {"stale", false}, {"batteryPercent", 57}}}};
@@ -206,6 +207,7 @@ TEST_F(BridgeDriverTest, StateParsing) {
     EXPECT_EQ(state.tilt_deg, 2.5);
     EXPECT_EQ(state.battery_percent, 57);
     EXPECT_EQ(state.motor, "AWAKE");
+    EXPECT_EQ(state.link_rssi_dbm, -55);
 }
 
 TEST_F(BridgeDriverTest, StaleTelemetryIsUnknown) {
@@ -232,6 +234,35 @@ TEST_F(BridgeDriverTest, ConnectTimeout) {
     EXPECT_EQ(errorCodeOf([&] { d->connect(0.05); }), ErrorCode::Timeout);
 }
 
+TEST_F(BridgeDriverTest, NullFieldsWhileGimbalDropsAreTolerated) {
+    // Gap tren phan cung: bridge tra null khi gimbal vua rot BLE.
+    setBridge([](FakeBridge& b) {
+        b.state = {{"move", {{"active", nullptr}}},
+                   {"motor", {{"state", nullptr}}},
+                   {"ble", {{"connected", false}, {"rssiDbm", nullptr}}},
+                   {"telemetry", {{"stale", nullptr}, {"panDeg", nullptr}, {"batteryPercent", nullptr}}}};
+    });
+    const GimbalState state = d->getGimbalState();
+    EXPECT_TRUE(state.telemetry_stale);
+    EXPECT_FALSE(state.moving);
+    EXPECT_EQ(state.motor, "UNKNOWN");
+    EXPECT_FALSE(state.link_rssi_dbm.has_value());
+    EXPECT_FALSE(state.battery_percent.has_value());
+}
+
+TEST_F(BridgeDriverTest, StateStaysResponsiveWhileReconnecting) {
+    // Gap tren phan cung: connect() cho bridge toi 60 s lam /gimbal/status treo.
+    setBridge([](FakeBridge& b) { b.label = "CONN..."; });
+    std::thread connecting([&] { errorCodeOf([&] { d->connect(1.5); }); });
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    const auto started = std::chrono::steady_clock::now();
+    EXPECT_EQ(d->getConnectionState(), ConnectionState::Connecting);
+    d->getLastError();
+    EXPECT_LT(std::chrono::steady_clock::now() - started, std::chrono::milliseconds(100));
+    connecting.join();
+    EXPECT_EQ(d->getConnectionState(), ConnectionState::Fault);
+}
+
 TEST(BridgeDriverOffline, UnreachableBridgeIsBackendOrTimeout) {
     BridgeHttpOptions options;
     options.base_url = "http://127.0.0.1:1";
@@ -239,4 +270,31 @@ TEST(BridgeDriverOffline, UnreachableBridgeIsBackendOrTimeout) {
     BridgeHttpDriver d(options);
     const ErrorCode code = errorCodeOf([&] { d.getGimbalState(); });
     EXPECT_TRUE(code == ErrorCode::Backend || code == ErrorCode::Timeout);
+}
+
+TEST_F(MockDriverTest, ReferenceZerosAnglesUntilCleared) {
+    d.move(1, 0, 200);
+    sleepMs(300);
+    const double raw_pan = *d.getGimbalState().pan_deg;
+    ASSERT_GT(raw_pan, 1.0);
+    d.setReference();
+    GimbalState state = d.getGimbalState();
+    EXPECT_TRUE(state.reference_set);
+    EXPECT_NEAR(*state.pan_deg, 0.0, 1e-6);
+    d.clearReference();
+    state = d.getGimbalState();
+    EXPECT_FALSE(state.reference_set);
+    EXPECT_NEAR(*state.pan_deg, raw_pan, 1e-6);
+}
+
+TEST_F(BridgeDriverTest, ReferenceWrapsAroundPlusMinus180) {
+    setBridge([](FakeBridge& b) { b.state["telemetry"]["panDeg"] = 170.0; });
+    d->setReference();
+    setBridge([](FakeBridge& b) { b.state["telemetry"]["panDeg"] = -170.0; });
+    EXPECT_NEAR(*d->getGimbalState().pan_deg, 20.0, 1e-6);
+}
+
+TEST_F(BridgeDriverTest, ReferenceNeedsFreshTelemetry) {
+    setBridge([](FakeBridge& b) { b.state["telemetry"]["stale"] = true; });
+    EXPECT_EQ(errorCodeOf([&] { d->setReference(); }), ErrorCode::NotReady);
 }

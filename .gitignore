@@ -3,3 +3,4 @@ build/
 *.csv
 config.json
 _tmp_config*.json
+!docs/results/*.csv

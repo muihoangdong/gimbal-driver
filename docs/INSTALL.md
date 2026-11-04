@@ -58,7 +58,7 @@ Tìm dòng `DJI RS3 MINI-XXXX`; `XXXX` là hậu tố dùng ở bước sau. Kh�
 
 ```bash
 cd ~/rs3mini-bridge
-GIMBAL_NAME_RE=XXXX MOVE_HOLD_MS=2000 npm start
+GIMBAL_NAME_RE=XXXX MOVE_HOLD_MS=2000 MOVE_STICK_SCALE=0.3 npm start
 ```
 
 Ở terminal khác (kết nối có thể mất 30–45 giây):
@@ -67,7 +67,7 @@ GIMBAL_NAME_RE=XXXX MOVE_HOLD_MS=2000 npm start
 curl http://127.0.0.1:8787/health/label   # "OK" là đã nối
 ```
 
-`MOVE_HOLD_MS=2000` để bridge tự về trung tính nếu không nhận lệnh giữ trong 2 giây.
+`MOVE_HOLD_MS=2000` để bridge tự về trung tính nếu không nhận lệnh giữ trong 2 giây. `MOVE_STICK_SCALE=0.3` cho pan quay đủ nhanh để thấy (khoảng 5°/s); mặc định 0,05 chỉ khoảng 1°/s, xem L04 trong LIMITATIONS.md.
 
 ## 6. Cài Gimbal Driver
 

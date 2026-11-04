@@ -36,13 +36,14 @@ Link với target CMake `gimbal_driver`. Lỗi được ném bằng `gimbal::Gim
 | `getGimbalState()` | `GimbalState` | `BACKEND`, `TIMEOUT` |
 | `getCapabilities()` | `Capabilities` | — |
 | `getLastError()` | `std::optional<GimbalError>` | — |
+| `setReference()` / `clearReference()` | — | `NOT_READY` nếu chưa có telemetry |
 | `checkLink()` | `ConnectionState` | — (dùng bởi `LinkMonitor`) |
 
 **`move`:** gọi lại cùng hướng để gia hạn. Lệnh cùng hướng trong vòng 500 ms chỉ gia hạn nội bộ, không gửi lại xuống gimbal.
 
 **`ConnectionState`:** `Disconnected` → `Connecting` → `Connected`; lỗi liên kết chuyển sang `Fault`. HTTP trả dạng chữ hoa (`CONNECTED`, `FAULT`...). Gọi `connect()` để thoát `FAULT`.
 
-**`GimbalState`:** `moving`, `pan_deg`, `tilt_deg`, `roll_deg`, `battery_percent`, `motor` (`AWAKE`/`ASLEEP`/`UNKNOWN`), `telemetry_stale`. Trường góc và pin là `std::optional`.
+**`GimbalState`:** `moving`, `pan_deg`, `tilt_deg`, `roll_deg`, `battery_percent`, `motor` (`AWAKE`/`ASLEEP`/`UNKNOWN`), `telemetry_stale`, `link_rssi_dbm` (RSSI BLE, dBm), `reference_set` (đã đặt mốc 0). Trường góc, pin và RSSI là `std::optional`.
 
 **`Capabilities`:** `direction_control`, `speed_control`, `absolute_angle`, `simultaneous_axes`, `recenter`, `telemetry`, `angle_reference`, `verified_on_hardware`.
 
@@ -63,6 +64,8 @@ Chạy bằng `./build/gimbal-driver --config config.json`. Nhận cả GET và 
 | `/gimbal/capabilities` | — | Các trường của `Capabilities` |
 | `/gimbal/connect` | `timeout_s` | `{"gimbal":"connected"}`, đồng thời reset monitor |
 | `/gimbal/disconnect` | — | `{"gimbal":"disconnected"}` |
+| `/gimbal/calibrate` | — | Lấy hướng hiện tại làm mốc 0 (phần mềm); 503 `NOT_READY` nếu chưa có telemetry |
+| `/gimbal/calibrate/clear` | — | Xóa mốc 0, góc trở về giá trị gimbal báo |
 | `/gimbal/mode` | — | Luôn trả 501, chưa có lệnh đã kiểm chứng |
 
 Ví dụ:
@@ -89,3 +92,10 @@ curl -H "X-Gimbal-Token: <token>" "http://<IP_PI>:8080/gimbal/move?pan=1&tilt=0&
 - Visual Servoing nên gửi `move` mỗi 100–300 ms với `duration_ms` ngắn (ví dụ 300) để lệnh tự hết hạn nếu tracking treo.
 - Khi nhận `STOP_UNCONFIRMED`, `LINK_LOST` hoặc `GAVE_UP`: ngừng tracking, không tự gửi lệnh mới.
 - Không dùng `pan_deg`/`tilt_deg` làm vòng kín góc tuyệt đối; chỉ dùng xu hướng thay đổi.
+
+## Mốc 0 (Calib)
+
+`setReference()` lấy hướng hiện tại làm gốc: từ đó `pan_deg`, `tilt_deg`, `roll_deg` là góc so với mốc, tính trong khoảng −180° đến 180°. Mốc chỉ nằm trong bộ nhớ của driver, mất khi service khởi động lại.
+
+Đây **không phải** hiệu chỉnh động cơ của DJI (Auto Tune, System Calibration): bridge không có lệnh này qua BLE, phải làm trong app Ronin.
+

@@ -1,0 +1,20 @@
+time,test_id,name,result,api_ms,error,note
+2026-11-04T11:32:22,ENV,firmware=chua-ghi,,,,http://127.0.0.1:8787
+2026-11-04T11:37:52,G-T01,Ket noi qua bridge,Pass,12,,
+2026-11-04T11:38:05,G-T02a,Pan trai,Fail,809,,
+2026-11-04T11:38:14,G-T02b,Pan phai,Fail,809,,
+2026-11-04T11:38:23,G-T03a,Tilt len,Pass,807,,
+2026-11-04T11:38:32,G-T03b,Tilt xuong,Pass,810,,
+2026-11-04T11:38:36,G-T04a,Stop giua chung,Fail,516,,
+2026-11-04T11:38:39,G-T04b,Recenter,Fail,240,,
+2026-11-04T11:38:41,STATE,Doc telemetry,Fail,4,,
+time,test_id,name,result,api_ms,error,note
+2026-11-04T11:47:44,ENV,firmware=chua-ghi_scale0.3,,,,http://127.0.0.1:8787
+2026-11-04T11:48:15,G-T01,Ket noi qua bridge,Fail,7,,
+2026-11-04T11:48:24,G-T02a,Pan trai,Pass,810,,
+2026-11-04T11:48:37,G-T02b,Pan phai,Pass,810,,
+2026-11-04T11:48:46,G-T03a,Tilt len,Pass,809,,
+2026-11-04T11:48:54,G-T03b,Tilt xuong,Pass,810,,
+2026-11-04T11:49:16,G-T04a,Stop giua chung,Pass,517,,
+2026-11-04T11:49:21,G-T04b,Recenter,Pass,242,,
+2026-11-04T11:49:36,STATE,Doc telemetry,Pass,5,,

@@ -88,6 +88,7 @@ Không truyền `--config` thì chạy Mock tại `127.0.0.1:8080`. Mở ra mạ
 | `/gimbal/stop`, `/gimbal/recenter` | Dừng, căn giữa |
 | `/gimbal/status`, `/gimbal/capabilities` | Trạng thái, khả năng |
 | `/gimbal/connect`, `/gimbal/disconnect` | Nối, ngắt và thử lại sau khi monitor bỏ cuộc |
+| `/gimbal/calibrate`, `/gimbal/calibrate/clear` | Đặt / xóa mốc 0 phần mềm (không phải hiệu chỉnh động cơ) |
 | `/gimbal/mode` | Trả 501, chưa có lệnh đã kiểm chứng |
 
 Thiếu `duration_ms` thì lấy 5000 ms. App Windows hiện chưa gửi token, cần sửa trước khi nối vào service có token. Nếu chạy bridge với `MOVE_HOLD_MS=2000`, lệnh giữ nên được gọi lại trong vòng 2 giây.

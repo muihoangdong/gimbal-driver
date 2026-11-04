@@ -71,6 +71,13 @@ TEST_F(ServiceTest, StatusAndCapabilities) {
     EXPECT_EQ(get("/gimbal/capabilities").second["absolute_angle"], false);
 }
 
+TEST_F(ServiceTest, CalibrateSetsAndClearsReference) {
+    EXPECT_EQ(get("/gimbal/calibrate").first, 200);
+    EXPECT_EQ(get("/gimbal/status").second["gimbal"]["reference_set"], true);
+    EXPECT_EQ(get("/gimbal/calibrate/clear").first, 200);
+    EXPECT_EQ(get("/gimbal/status").second["gimbal"]["reference_set"], false);
+}
+
 TEST_F(ServiceTest, BadInputAndUnknownRoute) {
     EXPECT_EQ(get("/gimbal/move?pan=abc").first, 400);
     EXPECT_EQ(get("/nope").first, 404);
